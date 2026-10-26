@@ -1,0 +1,54 @@
+# Render Blueprint for the Spendwise API (free web service). Secrets are not in this file: each `sync: false`
+# variable is entered once in the Render dashboard (Environment), with the same values as server/.env.
+services:
+  - type: web
+    name: spendwise-api
+    runtime: node
+    plan: free
+    # Singapore is the closest Render region to the MongoDB Atlas cluster in Mumbai.
+    region: singapore
+    rootDir: server
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      # Render puts one proxy in front of the app; needed for real client IPs and rate limits.
+      - key: TRUST_PROXY
+        value: "1"
+      # Addresses: the web app (Vercel) and this API (Render). Filled in once both exist.
+      - key: APP_URL
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: API_URL
+        sync: false
+      - key: TELEGRAM_WEBHOOK_URL
+        sync: false
+      # Secrets.
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false

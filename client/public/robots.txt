@@ -1,0 +1,8 @@
+# Spendwise: the front page, sign-up and the legal pages are public; everything else needs an account.
+User-agent: *
+Allow: /$
+Allow: /register
+Allow: /login
+Allow: /privacy
+Allow: /terms
+Disallow: /

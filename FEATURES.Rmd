@@ -1,0 +1,338 @@
+---
+title: "Spendwise: what is built and what it does"
+subtitle: "Personal finance tracker: features, architecture and verification"
+date: "23 October 2026"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+---
+
+# What Spendwise is
+
+Spendwise is a full-stack personal finance tracker. You log income and expenses, see where the money goes in charts, keep monthly budgets, automate repeating entries like rent and salary, export statements, and get a monthly summary by email.
+
+It was built from the "Personal Finance Tracker" project brief, which has a 2-week schedule, 9 use cases and 5 bonus features. **Every item on the schedule and every bonus feature is built.** Deployment (step 10) and the final polish (step 11) are still to come.
+
+**Ground rules followed throughout:**
+
+- **Real data only:** no demo accounts, no fake sample transactions, and no made-up numbers in charts. A new account starts at ₹0 and says so honestly.
+- **Honest refusals:** if a service isn't set up (for example, email without SMTP), the app clearly says "not configured" instead of pretending.
+- **Free tools only:** every library and service used is free or open source.
+
+# Technology stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 19 + Vite 8, Tailwind CSS v4, React Router 8 |
+| State | React Context (login session), TanStack Query (server data and caching) |
+| Charts | Recharts (pie, bar, area) |
+| Notifications | react-hot-toast |
+| Icons / font | lucide-react, Inter |
+| Backend | Node.js + Express 5, REST API, controller / service / route layers |
+| Database | MongoDB Atlas (free M0 cluster, AWS Mumbai) + Mongoose 9 |
+| Authentication | Own JWT (HS256) + bcrypt password hashing |
+| Validation | zod, on every request body and query |
+| Email | Nodemailer over Gmail SMTP (app password) |
+| PDF | pdfkit |
+| PWA | Web app manifest + service worker |
+| Tests | Node's built-in test runner + a throwaway MongoDB (mongodb-memory-server), Playwright for UI checks |
+
+# Features
+
+## Accounts and security (use cases 1 and 8)
+
+- Sign up with name, email and password; log in; log out.
+- Passwords need **8+ characters with a letter and a number** and are stored only as **bcrypt hashes**, which are never returned by the API.
+- Login returns a **JWT**, sent in the `Authorization` header on every request.
+- Wrong password and unknown email give the **same error**, so nobody can find out which emails have accounts.
+- **Rate limits:** 10 failed logins per IP per 15 minutes, and 20 sign-ups per IP per hour.
+- **Rejected tokens:** forged, expired, unsigned (`alg: none`) and logged-out tokens are all refused.
+- **Log out this device** (that token is revoked) or **log out everywhere** (every token stops working).
+- **Change password:** needs the current password, and logs out every other device.
+- **Edit profile name.**
+- **Delete account:** needs the password, and permanently removes the account and all its transactions, budgets and recurring rules.
+- **Protected pages:** visiting any page while logged out sends you to login, then back to that page afterwards.
+- **Data isolation:** every query is scoped to the logged-in user. Someone else's entry answers "not found", the same as an entry that doesn't exist.
+
+## Transactions (use cases 2, 4, 5 and 6)
+
+- **Add, edit and delete** income or expense entries: amount, category, date and an optional note.
+- **Amounts in exact paise:** amounts are entered in rupees (`1,250.50` or `1250.5`) and stored as whole paise, so totals never pick up rounding errors.
+- **Validation:** the app refuses ₹0, negative amounts, more than 2 decimals, amounts over ₹1 crore, impossible dates (30 Feb), dates before 2000 and future dates. Each error names the exact field.
+- **Categories:** 17 suggested expense categories and 8 income ones, one-tap category chips, and your own custom categories (remembered and suggested later).
+- **History:** newest first, with **pagination** (20 per page) that stays stable even when many entries share a date.
+- **Filters:** type (all / expense / income), category, date presets (this month, last month, last 3 months, this year, all time) or a custom range, and text search in notes and categories.
+- **Sorting:** newest, oldest, highest or lowest amount.
+- **Filters kept in the URL**, so a filtered view survives a reload and can be bookmarked.
+- **Instant delete:** deleting removes the row from the screen at once, after a confirm dialog, and puts it back if the server refuses.
+- **Totals for the current filter:** the income / expense / balance cards on the Transactions page always match the filtered list.
+
+## Dashboard, charts and summary (use case 3, Days 8–11)
+
+- **Greeting:** "Good morning / afternoon / evening, *name*".
+- **Month switcher:** view any past month.
+- **Summary cards:** Income, Expenses and Balance (balance turns red when negative), the number of transactions, and **"x% more / less than last month"** for spending.
+- **Pie (donut) chart:** expenses by category, with the six biggest plus "Other", and a legend showing % share and amounts.
+- **Bar chart:** income vs expenses for the last 6 months.
+- **Area chart:** daily spending in the month.
+- **Recent transactions:** the latest 6 entries.
+- **Budgets at a glance:** the most-used budgets, with coloured progress bars.
+- **Coming up:** recurring entries due in the next 14 days.
+- **Live updates:** adding, editing or deleting anything refreshes every card and chart at once.
+- **Honest empty states:** "No expenses in October", or "Add your first transaction" for a new account.
+- **Exact totals:** all calculated inside MongoDB as integer paise. Months and days with no entries appear as ₹0 instead of disappearing.
+
+## Monthly budgets ("manage budget over time")
+
+- **Limits:** set a monthly limit **per category** (e.g. Groceries ₹2,500) or **one overall limit** for all spending.
+- **Each budget shows:** spent, remaining (negative when over) and % used.
+- **Status:** **On track**, **Close to limit** (80% or more) or **Over budget**.
+- **Spent without a budget:** categories you spent on that have no limit, with a "Set budget" shortcut.
+- **Copy from last month:** budgets you've already set in the new month are kept.
+- **Plan ahead:** budgets can be set up to 12 months in advance.
+- **6-month history chart:** budget against the spending it actually covers.
+- **Expenses only:** income never counts against a budget.
+
+## Recurring transactions (bonus)
+
+- **Rules:** e.g. "Rent ₹12,000 every month from 1 Sept". Daily, weekly, monthly or yearly, every 1–12 periods, with an optional end date.
+- **Created on the due date:** the server adds the real entry on its due date, in **India time**.
+- **Catch-up:** a start date in the past adds the already-due entries straight away. The server also catches up when it wakes from sleep (it checks at start-up and then hourly).
+- **Never twice:** a database unique index on (rule, date) makes duplicates impossible, even if two checks overlap.
+- **Month ends:** "monthly on the 31st" lands on 28 Feb and 30 Apr, then back to the 31st. 29 Feb works in leap years.
+- **Pause / resume:** dates missed while paused are skipped, not back-filled.
+- **Editing:** changes only affect future entries. Past entries keep their real amounts.
+- **Deleting a rule:** keeps the entries it already created.
+- **Upcoming list:** the next 30 days, with income and expense totals.
+
+## Export (use case 9, bonus)
+
+- **CSV download:** opens in Excel / Google Sheets. It's UTF-8 with Excel support, and it's protected against spreadsheet formula injection (a note like `=HYPERLINK(...)` stays plain text).
+- **PDF statement:** your name, the period and filters, Income / Expenses / Balance, every entry (red for expenses, green for income) and page numbers. It holds up to 5,000 entries; beyond that it asks you to narrow the filters or use CSV.
+- **Same filters as the list:** both exports use the list's filters and sort, so you get exactly what's on screen.
+- **Streamed:** files stream straight from the database, so large histories don't slow the server.
+
+## Monthly email report (bonus)
+
+- **Opt-in:** off by default, and turned on in Settings.
+- **Content:** last month's income, expenses, balance, change vs the month before, top 5 categories and how each budget went.
+- **Formats:** both a designed HTML version and a plain-text version.
+- **Empty months:** say "You didn't record any transactions in …" instead of showing empty boxes.
+- **Once a month:** sent once per user per month. Overlapping runs can't double-send, and a failed send is retried on the next run.
+- **New users:** turning it on starts with the current month, so nobody gets a report for a month before they joined.
+- **Preview:** see the exact email in Settings, shown in a sandboxed frame.
+- **"Email it to me now":** a test send to your own address, at most 5 an hour.
+- **Safe content:** names and categories are escaped, so they can't inject HTML into the email.
+- **Verified:** a real test email was sent through Gmail and received.
+
+## Responsive design, theme and PWA (Day 12, bonus)
+
+- **Mobile-first:** sidebar on desktop; top bar and bottom tab bar on phones.
+- **Checked sizes:** desktop (1280 px) and phone (390 px), with no sideways scrolling.
+- **Themes:** light, dark and system, with no white flash on load.
+- **Installable app (PWA):** manifest, app icons (including a maskable one for Android) and a service worker.
+- **Offline:** the app still opens without internet. Your data needs the connection; API responses are never cached.
+- **Accessibility:** labelled form fields, keyboard-friendly dialogs (Escape closes them, focus stays inside), screen-reader names on icon buttons, and charts that also list their numbers in text.
+
+## UX details (Day 11)
+
+- **Toasts:** for every action (added, saved, deleted, copied, exported, errors).
+- **Loading:** skeleton placeholders while data loads.
+- **Validation:** client-side checks that mirror the server's rules, so most mistakes show instantly.
+- **Slow server:** a friendly message when the free server is waking up, and a "Can't reach Spendwise — Try again" screen when it's down.
+
+# API overview
+
+| Area | Endpoints |
+|---|---|
+| Health | `GET /api/health` (API, database, login and email status) |
+| Auth | register, login, me (get/update/delete), logout, logout-all, password |
+| Transactions | `POST/GET /api/transactions`, `GET/PATCH/DELETE /api/transactions/:id`, `GET /api/categories` |
+| Stats | `/api/stats/summary`, `/by-category`, `/monthly`, `/daily` |
+| Budgets | `GET/PUT /api/budgets`, `PATCH/DELETE /api/budgets/:id`, `/copy`, `/history` |
+| Recurring | `GET/POST /api/recurring`, `/upcoming`, `GET/PATCH/DELETE /api/recurring/:id` |
+| Export | `/api/export/transactions.csv`, `/api/export/transactions.pdf` |
+| Reports | `/api/reports/settings`, `/preview`, `/send-test` |
+
+All errors share one shape, `{ error: { code, message, details } }`, and validation errors list each field.
+
+# Added in batches 12O–12S (25 October 2026)
+
+- **Envelopes** (Budgets → Envelopes): share the month's income out into envelopes such as Needs, Wants and Savings, each holding some categories, and see what each has left from your real spending, what is still to share out and what was spent outside any envelope. Copy last month's in one tap. Monthly limits stay as they were.
+- **Sinking funds** (Budgets → Sinking funds): car insurance, Diwali, school fees: the cost, when it's due and how often, and what to put aside each month. Marking one paid can record the expense and moves the date on.
+- **Wishlist with a waiting period** (Goals → Wishlist): add what you want and wait (30 days unless you change it). Buying early asks again; dropping an item adds it to "not bought after all". Each item links to "Can I afford it?".
+- **Vehicles:** note fill-ups with the odometer reading to see real mileage between full tanks, cost per km and spending on fuel, and get a reminder when a service is due by km or by months.
+- **Vault:** warranties and insurance policies with provider, number, dates, price or premium, sum insured and nominee, and reminders 30 and 7 days before each one ends.
+- **Credit card rewards** (on Accounts): enter each card's cashback or points (and higher rates by category) to see what each card earned and which card is best for each kind of spending. You enter the rates; there's no free feed of them.
+- **FIRE** (Tax & planning → FIRE): the money you'd need to live off your investments and roughly when you'd get there, from your real spending and investments or numbers you type, in today's money. A projection, not advice.
+- **Scan a receipt:** in the add form, take or pick a photo; the browser reads it (nothing is sent anywhere for this) and suggests the total, date and shop, which you check before saving. The photo is attached to the entry. The scanner downloads once (about 10 MB) and is cached.
+- **Share into Spendwise and shortcuts:** once installed on Android, share a payment message or a receipt photo into Spendwise to fill the add form; long-press the app icon for Add expense or Add income. These need the app installed from the live site (after deployment).
+- **Works offline for new entries:** with no connection an entry is kept on the phone, a "waiting to sync" pill shows, and it's added when you're back online, never twice.
+- **Roles in a shared space:** owner, editor (adds and changes), viewer (only looks) and child (adds own expenses within monthly pocket money). Choose the role when inviting and change it later on Household.
+- **Private accounts:** in a shared space, an account you added can be made private, so only you see it and its entries.
+- **Approval for big expenses:** the owner can set an amount; bigger expenses by anyone else wait on the Approvals page and count nowhere until approved.
+- **Calendar:** a private address that Google Calendar, Apple Calendar or Outlook can subscribe to, with your bills, EMIs, SIPs, card due dates, maturities and renewals and a reminder the day before, or a one-off .ics download. Subscribing needs the live site.
+- **Easier to read:** larger text and a high-contrast mode in Settings.
+- **In Hindi** like the rest of the app. Bengali was dropped; 12N is on hold.
+- **Tests:** 208 automated API tests (13 new) and 19 client tests (4 new, for reading receipts). On the real database in Chromium with four temporary people: every feature above used through the app, a receipt photo read correctly, an entry added offline and sent later, the roles, private account and approval checked from each person's side, the calendar read back, in Hindi and at phone size.
+
+# How it was verified
+
+- **208 automated API tests** (plus 19 client tests), all passing. They run against a real throwaway MongoDB, never the production database, and cover the rules above: duplicate emails, token tampering, rate limits, user isolation, exact paise maths, filters, pagination, budget statuses, recurring date maths and concurrency, exports and email sending.
+- **Live checks on MongoDB Atlas** after every step, using temporary accounts that were deleted afterwards. The database was left empty.
+- **Browser checks in Chromium:** every page at desktop and phone size, in light and dark mode; flows clicked through (sign-up, add, edit, delete, filters, CSV/PDF download, email preview, logout, account deletion); and PWA checks (manifest, icons, service worker, offline start).
+
+# Not done yet
+
+- **Step 10: deployment.** The API on Render and the app on Vercel (free tiers), with production environment variables and CORS locked to the live site.
+- **Step 11: polish.** A final README with live demo link and screenshots, code cleanup, and an optional walkthrough video.
+- **Your own feature list**, which you'll give after the brief is complete.
+
+# Added in batch 12A (24 October 2026)
+
+- **Accounts and wallets:** cash, bank accounts, credit cards and wallets, each with an opening balance (negative for a card with money owed) and a live balance. Accounts can be renamed, archived (hidden from pickers but kept in history and net worth), made the default, or deleted when they have no entries.
+- **Net worth:** assets, what you owe and the net across all accounts, on the Accounts page and the dashboard.
+- **Transfers** between your own accounts (ATM withdrawals, paying a card bill). They move balances but never count as income, spending, budget use or chart totals.
+- **Payment method** on every entry (UPI, card, cash, net banking, other), filterable, with a "How you paid" breakdown on the dashboard. Shown in CSV exports.
+- **Shared household spaces:** create a space, invite by email (or share the 7-day link, for example on WhatsApp), and everyone sees and edits the same accounts, entries and budgets, with "by *name*" on each entry. Owners rename, remove people or delete the space; anyone can leave (the owner role passes to the longest-standing member). Your personal space stays private.
+- **Activity log:** every create, edit and delete with who and when, and **restore an earlier version** of an entry.
+- **Undo delete:** deleting shows an Undo button; deleted entries can also be restored from Activity for 30 days.
+- **Automatic upgrade:** data from before this batch was moved into each user's personal space and Cash account on start-up.
+- **Tests:** 96 automated API tests (22 new).
+
+# Added in batch 12B (24 October 2026)
+
+- **Tags** such as `#office` or `#trip-goa` on any entry, with a tag filter (showing how many entries use each tag) on the Transactions page. Tags appear in CSV and PDF exports.
+- **Split entries:** one bill across several categories (a Big Bazaar bill as ₹300 Groceries + ₹150 Pet food). The parts must add up exactly, and pie charts, category filters and budgets count each part in its own category.
+- **Receipt photos:** attach a photo to an entry. The app shrinks it in the browser (about 1600 px JPEG) before uploading; it's stored in MongoDB GridFS, checked to really be an image, and opened from a paperclip on the entry.
+- **Quick add from text:** type "450 swiggy dinner yesterday upi #office" and the form fills in the amount, category, date, time, payment method, tags and note for you to check before saving.
+- **Command palette and shortcuts:** Ctrl/⌘K or / opens search and commands; N adds an expense, I income, T a transfer, P toggles privacy, ? lists the shortcuts.
+- **Privacy mode:** blurs every amount (handy in public); toggled from the sidebar eye, the P key or Settings, and remembered.
+- **Number style:** lakh/crore (₹1,00,000) or million (₹100,000), set in Settings.
+- **Time of day** on entries (optional); lists sort by date and then time.
+- **Foreign currency:** enter an amount in USD, EUR or about 30 other currencies; it's converted at that day's European Central Bank rate (via Frankfurter, free) with a live "≈ ₹…" preview, and both amounts are shown on the entry. Totals stay in rupees.
+- **Trip mode:** start a trip (name and optional budget) and every new entry gets its tag automatically until you end it; then see a summary with total, per-day spend, budget used, categories and the biggest expense.
+- **Tests:** 102 automated API tests (6 new) plus 5 tests for the quick-add parser; checked in Chromium end to end.
+
+# Added in batch 12C (24 October 2026)
+
+- **Import a bank or card statement** from a CSV or Excel file (.csv, .xls, .xlsx). The file is read on your device; Spendwise finds the header line even under the account details banks print at the top, and guesses which column is the date, the narration and the amounts (separate debit/credit columns, or one signed column with an optional Dr/Cr column).
+- **Preview before saving:** every line is shown with its date, merchant, amount, type and category. Opening balances, totals and other lines that aren't entries are listed as skipped, with the reason. Nothing is saved until you press Import.
+- **Merchant names** are pulled out of bank narrations ("UPI-SWIGGY-SWIGGY8@YBL-…" → Swiggy, "NEFT CR-…-ACME TECHNOLOGIES PVT LTD-…" → Acme Technologies), along with the payment method (UPI, card, net banking). Merchants are searchable on the Transactions page.
+- **Automatic categories**, in this order: your own rules ("narration contains rahul sharma → Refunds"); what you've used before for that merchant (learned from earlier imports and from the notes you typed); then a built-in list of common Indian merchants (Swiggy, Zomato, Blinkit, DMart, Uber, Airtel, Netflix, IRCTC and others).
+- **Transfers spotted:** ATM withdrawals become transfers to your Cash account, and credit card bill payments become transfers between your bank account and the card, so they don't count as spending.
+- **Duplicate detection:** a line already imported before, or matching an entry you typed (same amount within two days), is marked and left out unless you tick it.
+- **Saved bank layouts:** the column choices are remembered under a name (for example "HDFC Savings") and used automatically the next time a file with the same header is imported.
+- **Undo an import** as a whole from "Past imports", and bring it back later if needed (for 30 days).
+- **Tests:** 114 automated API tests (12 new, using narration formats from HDFC, SBI, ICICI, Axis and card statements) plus 4 tests for reading files; checked in Chromium with a bank Excel statement and a card CSV.
+
+# Added in batch 12D (24 October 2026)
+
+- **Budget rollover:** tick "Roll over unspent money" on a budget and whatever was left of last month's budget for that category is added to this month's limit (and keeps carrying forward while you stay under). Overspending carries nothing. The budget shows how much was rolled over; copying a month keeps the setting.
+- **Weekly budgets:** standing limits that reset every Monday (for a category, or overall), with this week's spending and last week's for comparison.
+- **Budget alerts at 80% and 100%**, for monthly and weekly budgets, each sent once per month or week. In a shared space everyone who wants them gets them.
+- **Browser push notifications** (free Web Push with the app's own keys): turn them on per browser in Settings, send yourself a test, and tap a notification to open the right page. Works in Chrome, Edge, Firefox and Android; on iPhone and iPad (iOS 16.4+) only from the app installed to the home screen. Logging out turns push off for that browser.
+- **Budget alerts by email** (optional), through the same Gmail sending as the monthly report.
+- **Daily reminder** at 9 pm (or a time you choose): a notification only if you haven't added anything that day. Tapping it opens a new expense.
+- **Tests:** 119 automated API tests (5 new; push messages are decrypted by a local stand-in push service). Checked in real Google Chrome with Google's push service: the test notification, an 80% alert, a weekly 100% alert and the reminder all arrived.
+
+# Added in batch 12E (24 October 2026)
+
+- **Savings goals:** a target, an optional date and a progress ring; add money or take some out, and see how much to put aside each month to get there.
+- **Emergency fund:** a suggested target of 6 months of your real average spending (last 3 complete months), set up in one tap.
+- **Loans and EMIs:** add a home, car or personal loan (the EMI is worked out with the standard formula, or enter your lender's figure). Each EMI paid can be added to your transactions as an "EMI & Loans" expense. See what's left, interest paid and still to pay, the next EMI and the payoff date.
+- **Prepayment calculator:** what prepaying ₹X now would save, both ways lenders apply it: same EMI and finish sooner, or same end date with a smaller EMI.
+- **Lent and borrowed:** money you lent to or borrowed from people, repaid in parts, with a net total per person and overdue marking.
+- **Group expenses:** a trip or flat with friends; split each expense equally or by exact amounts, see who owes whom, and settle up in as few payments as possible. On a phone, "Pay with UPI" opens GPay, PhonePe, Paytm or BHIM with the person and amount filled in; on a computer the UPI ID is shown to copy.
+- **Bills:** electricity, rent, phone, insurance (monthly to yearly, fixed or varying amounts) on a calendar, with a reminder 3 days before each one is due. "Mark as paid" adds the expense and moves to the next due date; skip or undo when needed.
+- **Credit card cycle:** set a card's statement and due days to see the last statement's amount, its due date, what's been paid since and what's left, plus this cycle's spending, with a "Pay card bill" button that fills in the transfer.
+- **Tests:** 130 automated API tests (11 new, including EMI and prepayment figures checked against the standard formula) plus a UPI-link test; clicked through in Chromium at desktop and phone size.
+
+# Added in batch 12F (24 October 2026)
+
+A new **Insights** page with six tabs.
+
+- **Month-end forecast:** where this month is heading: what you've spent, plus your usual day-to-day rate for the days left, plus recurring entries, bills and EMIs still due, compared with last month and your overall budget.
+- **Unusual spending:** categories running well above your 3-month average (judged by pace, so mid-month is fair), new categories, and single expenses far bigger than usual.
+- **Savings rate:** how much of your income you kept each month, with the average and whether it's going up or down.
+- **Subscription finder:** charges that repeat every month or year at the same price (Netflix, Spotify, gym), what they cost a year, when the next one is due, and whether one seems to have stopped.
+- **Spending patterns:** by day of the week and time of day, plus a calendar heatmap of every day of the last year.
+- **Merchant view:** where you spend most, and any merchant month by month. Imports fill in merchants; you can also type one when adding an expense.
+- **Compare two periods:** this month vs last, last month vs a year before, or any two date ranges, per category.
+- **Year in review:** totals, savings rate, busiest and lightest month, top categories and merchants, biggest expense and no-spend days, compared with the year before.
+- **In today's prices:** your monthly spending adjusted for inflation with India's official Consumer Price Index from MoSPI (Ministry of Statistics), downloaded from MoSPI's own API and refreshed daily.
+- **Saved reports:** group spending by category, month, merchant, tag, account, payment method or weekday over a period, with filters; save it and open it again any time.
+- **No-spend streaks and challenges:** your current and longest no-spend runs (rent, bills, EMIs and recurring costs don't count) and logging streak; start a 3–30 day no-spend challenge (from tomorrow if you've already spent today).
+- **Achievements:** quiet milestones (first entry, a week of logging, a no-spend week, within budget, saving 20%, goal reached, loan repaid and more), worked out from your data and never pushed at you.
+- **Worth it?:** rate an expense as worth it, meh or not worth it, and see how much went on things you regret, and where.
+- **Tests:** 141 automated API tests (11 new; the CPI download is tested against a stand-in that answers like MoSPI); clicked through in Chromium on the real database with live MoSPI figures, at desktop and phone size.
+
+# Added in batch 12G (24 October 2026)
+
+A new **Tax & planning** page.
+
+- **Tax helper:** tag expenses #80c, #80d, #80d-parents or #rent and see, for the financial year (April to March), how much of each limit you've used: ₹1.5 lakh for investments (section 123, was 80C) and ₹25,000 each for your and your parents' health insurance (section 126, was 80D; ₹50,000 for senior citizens), plus rent paid for HRA.
+- **Financial-year dates:** "This financial year" and "Last financial year" in the transaction filters, so lists, totals and CSV/PDF exports cover April to March, and in saved reports.
+- **Salary breakdown:** from CTC to monthly take-home under the new and old regimes: PF, professional tax, HRA exemption (50% of salary in the 8 cities the 2026 rules list), investments and health insurance, slab by slab, with the rebate, surcharge and cess, and which regime costs less.
+- **Can I afford it?:** enter a price and a date; Spendwise checks your cash and bank balance over the next 60 days with everything already due and says yes, tight or not right now, and how many months of saving it would take instead.
+- **60-day cash-flow calendar:** your cash and bank balance day by day with salary, bills, EMIs, card bills and usual spending, a warning if any day goes below zero, and the lowest point.
+- **The rules behind it** are this year's official ones: the Income-tax Act, 2025 (in force since 1 April 2026), the Finance Bill 2026 memorandum and the Income-tax Rules, 2026, with the year and sources shown. Everything is labelled as an estimate, not tax advice.
+- **Better daily estimates:** forecasts now leave rent, EMIs, insurance, investments, bills and one-off payments of ₹10,000 or more out of "usual day-to-day spending".
+- **Tests:** 154 automated API tests (13 new: slabs, the ₹12 lakh rebate and marginal relief, surcharge relief at ₹50 lakh, senior slabs, HRA cities, ₹10 rounding, the salary breakdown, the tax tracker, the cash flow and FY periods); clicked through in Chromium on the real database at desktop and phone size.
+
+# Added in batch 12H (24 October 2026)
+
+A new **Investments** page.
+
+- **Mutual funds with real NAVs:** search every scheme in AMFI's official list (for example "parag parikh flexi") and add it. Values use AMFI's latest daily NAV.
+- **Purchases and sales:** enter the amount and the units follow from that day's NAV (a holiday gets the next business day's, as funds allot). Or enter the NAV from your statement. A purchase can also be recorded as an "Investments" expense from your bank account. Sales use the average cost, and you can't sell more units than you held.
+- **SIP tracker:** set the monthly amount and the first instalment. Each instalment is bought at its own day's NAV once AMFI publishes it, including every instalment since a start date in the past. You see invested against current value, the gain and the **XIRR**, your real yearly return.
+- **Stocks, gold and others:** you enter the price whenever you like; Spendwise doesn't fetch stock or gold prices.
+- **Fixed and recurring deposits:** value to date and at maturity from the rate and term (quarterly compounding like Indian banks, or simple interest), a "Maturing soon" list for the next 90 days, and a **reminder a week before** maturity.
+- **PPF:** deposits (at most ₹1.5 lakh a financial year, with what's left shown), interest on the lowest balance after the 5th, credited each 31 March, and the maturity date.
+- **Where it is:** the split of your money between funds, stocks, gold, deposits and PPF.
+- **Net worth timeline:** month by month, your accounts plus investments minus what's left on loans, as a chart and a table. From now on each month's investment value is stored at month end; earlier months are worked out from deposits' terms and the last known prices.
+- **Tests:** 168 automated API tests (14 new: XIRR, FD/RD/PPF maths, AMFI's two file layouts, fund search, holiday NAVs, SIPs and their catch-up, average-cost sales, PPF limits, maturity reminders and the net-worth timeline); clicked through in Chromium on the real database with AMFI's live NAVs (the purchase price matched AMFI's own history report), at desktop and phone size.
+
+# Added in batch 12I (25 October 2026)
+
+New security cards in **Settings**.
+
+- **Two-factor login:** scan a QR code with any authenticator app (Google Authenticator, Microsoft Authenticator, Aegis…); from then on, signing in asks for the 6-digit code after the password. You get 10 one-time backup codes for a lost phone, and can make new ones. Turning it off needs your password and a code.
+- **Signed-in devices:** see every browser and phone signed in to your account, with when it was last active, and sign any of them out, or all the others at once.
+- **New-device sign-in emails:** if your account is signed in to from a device it hasn't been used on before, you get an email saying which browser and when, with a link to change your password (which signs every device out).
+- **App lock:** a PIN (4 to 8 digits) and, on a phone or laptop with a sensor, your **fingerprint**. Spendwise locks after 1 to 60 minutes without use, or when you press Lock. While locked, the server itself refuses to send your data to that device, and five wrong PINs sign it out.
+- **Backup and restore:** download everything in your space as one JSON file, and restore it later, here or into another account. Everything is checked first, and if anything goes wrong your data stays as it was.
+- **Tests:** 177 automated API tests (9 new: the RFC 6238 test vectors, signing devices out, older tokens, two-factor set-up, login, one-time codes, backup codes and lock-out, new-device emails, the app lock and its PIN limit, backup and restore with links between records). Clicked through in Chromium on the real database: two-factor with real codes, a backup code on a second device and signing it out, PIN and fingerprint unlock (with Chrome's virtual authenticator standing in for the sensor), and backup and restore, at desktop and phone size.
+
+# Added in batch 12J (25 October 2026)
+
+A new **Integrations** page.
+
+- **Google Sheets sync:** connect your Google account and Spendwise makes a spreadsheet in your own Drive with every entry and a month-by-month summary, updated a few seconds after each change. Spendwise can only see the files it creates, not the rest of your Drive. Disconnecting leaves the sheet with you.
+- **Telegram bot:** link your Telegram from the app, then just message the bot "add 200 chai" or "450 swiggy dinner yesterday upi". It understands amounts, dates, categories, payment methods and tags the same way as the app's quick add. /today and /summary tell you where you stand, /undo takes back a mistake, and an optional summary arrives every evening at a time you choose.
+- **API tokens:** make a token for your own scripts or apps (read-only or read-and-write, optionally expiring) and use Spendwise's API with it. Tokens can't touch your account, security settings, backups or sharing.
+- **Webhooks:** have Spendwise call your own address whenever an entry is added, edited or deleted, a statement is imported, recurring entries are added or a budget hits 80% or 100%. Every message is signed, failed ones are retried, and each delivery is listed.
+- **Tests:** 183 automated API tests (6 new: tokens and their limits, signed webhooks with retries, blocked private addresses, the Google connect-sync-disconnect flow against a stand-in for Google, the Telegram bot's linking, messages, undo, summaries and webhook, and the server's parser matching the app's). On the real database: a token and a signed webhook over real HTTP, a real Google account connected with the sheet made in its Drive, and a real Telegram chat linked that added an entry, which then appeared in the sheet; at desktop and phone size. (Google refuses the en_IN locale for new sheets, so the sheet uses the Google account's own locale with India time.)
+
+# Added in batch 12K (25 October 2026)
+
+- **Hindi everywhere:** pick हिन्दी from the language menu (sidebar, sign-in pages or Settings) and every screen, menu, form, message, chart and empty state switches to Hindi, with Hindi dates and a proper Devanagari font. Your entries stay as you typed them; the built-in categories show in Hindi (खाना-पीना, किराना…). The choice is remembered on the device and on your account, so a new phone starts in Hindi too.
+- **The Telegram bot speaks Hindi:** with the app in Hindi, the bot's replies, /today, /summary, /undo and the evening summary come in Hindi, and you can message it in Hindi: "२०० चाय कल".
+- **Voice entry:** tap the mic next to Quick add (or in the command palette), say "450 swiggy dinner yesterday" or "200 चाय कल", and the add form opens filled in for you to check. It works in Chrome and Edge; the mic doesn't appear where the browser can't do it.
+- **Quick add understands Hindi:** Hindi digits, आज, कल and परसों, weekdays, everyday words for food, groceries, transport, fuel, rent, medicine and more, salary and "मिला" for income, and UPI, card or नकद for how you paid.
+- **Still in English:** the server's error messages and emails, the Activity log lines, official tax-law names, and the Google Sheet's column headings.
+- **Tests:** 185 automated API tests (2 new: saving the language, and the bot answering and reading Hindi) and 15 client tests (new: every piece of text has Hindi with matching placeholders, and Hindi quick add). On the real database in Chromium: every page in Hindi at desktop and phone size with no errors and no sideways scrolling, a Hindi quick add saved, and back to English.
+
+# Added in batch 12M (25 October 2026)
+
+Tax & planning now has **Capital gains** and **Interest & TDS** tabs, and the Rent card makes **rent receipts**.
+
+- **Capital gains report:** short-term and long-term gains on your fund, stock and gold sales for the year, each sale matched with the oldest units first, with losses set off, the ₹1.25 lakh exemption on equity applied and an estimate of the tax (pick your slab rate for the gains taxed at it). Debt funds bought from April 2023 count as short-term whatever the holding period, and shares or equity funds bought before February 2018 use their 31 January 2018 value (AMFI's NAV for funds). Spendwise picks how each fund is taxed from AMFI's own category and asks you only when a fund's category doesn't settle it. The rules are the ones in the Income-tax Act, with the sections named for the year you pick.
+- **EPF and NPS** next to PPF: EPF from your passbook balance plus contributions, with interest estimated at EPFO's declared rate (8.25%) until the passbook shows it; NPS contributions as units at the NAV from your statement.
+- **Interest and TDS:** savings and FD interest you record (a new Interest category), plus what your FDs and RDs earned in the year, and the tax deducted at source, whether entered on an income entry (a new TDS field under More) or from Form 16 / 16A / 26AS in the TDS register.
+- **Rent receipts:** one receipt a month from the rent you actually paid, ready for your landlord to sign, as a PDF. If the year's rent is over ₹1 lakh, Spendwise asks for the landlord's PAN first, as an HRA claim needs it.
+- **Honest limits:** these are estimates, not tax advice; surcharge and losses from earlier years aren't included; years before 2025-26 aren't covered; EPF balances and NPS NAVs come from you (there's no free official feed); receipts are in English.
+- **Tests:** 195 automated API tests (10 new, against a stand-in for AMFI) and 15 client tests. On the real database in Chromium: a fund bought and sold at AMFI's real NAVs, a real liquid fund taxed as a debt fund, the tax worked out by hand and matched, rent receipts downloaded and read back, in Hindi and at phone size.
