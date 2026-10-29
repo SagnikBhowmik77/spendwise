@@ -31,3 +31,8 @@ messages to Render, so a local API must run with polling off (`TELEGRAM_POLLING=
 
 Render's free service sleeps after 15 minutes without requests; the first request after that takes up to a minute, and
 scheduled jobs (reminders, reports) only run while it is awake. A Telegram message or opening the app wakes it.
+
+`.github/workflows/keep-awake.yml` pings `/api/health` every 10 minutes from 05:30 to about 00:20 India time, so it is
+awake for the 9 pm reminder, bill alerts and reports. It doesn't run all night because Render's 750 free hours a month are
+shared by every free service in the workspace (hopin, wardline, roomies too). GitHub stops scheduled workflows after 60
+days without a commit; re-enable it under the repo's Actions tab if pings stop.
