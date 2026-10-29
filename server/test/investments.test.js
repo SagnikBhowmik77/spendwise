@@ -169,7 +169,9 @@ test('SIP: due instalments are bought at each date’s NAV; today waits for AMFI
 test('SIP catch-up: many past instalments are bought in the background', async () => {
   const tk = await newUser();
   const h = (await call('POST', '/api/investments', { kind: 'mf', schemeCode: 122640 }, tk)).body.holding;
-  const r = await call('PUT', `/api/investments/${h.id}/sip`, { amount: '2000', startDate: dayString(addMonths(now, -8)) }, tk);
+  // Starting a day after "8 months ago" makes exactly 8 instalments due on any date: the 9th is always tomorrow.
+  // (Plain "8 months ago" gave 9 near month ends, when February clamps the start to the 28th.)
+  const r = await call('PUT', `/api/investments/${h.id}/sip`, { amount: '2000', startDate: dayString(addDays(addMonths(now, -8), 1)) }, tk);
   assert.equal(r.status, 200);
   let holding = r.body.holding;
   for (let i = 0; i < 100 && holding.sip.count < 8; i += 1) {

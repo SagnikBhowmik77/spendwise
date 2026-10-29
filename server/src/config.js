@@ -76,6 +76,12 @@ export const config = {
     pass: (process.env.SMTP_PASS || '').replace(/\s+/g, ''),
     from: process.env.SMTP_FROM || (process.env.SMTP_USER ? `Spendwise <${process.env.SMTP_USER}>` : ''),
   },
+  // Production mail relay (client/api/send-mail.js on Vercel), because Render's free tier blocks outgoing SMTP.
+  // Both set: mail goes there over HTTPS, signed with the shared secret. Unset: SMTP as above.
+  mailRelay: {
+    url: (process.env.MAIL_RELAY_URL || '').replace(/\/+$/, ''),
+    secret: process.env.MAIL_RELAY_SECRET || '',
+  },
   // Browser push (Web Push with VAPID keys; free, no account). Off unless both keys are set.
   push: {
     publicKey: process.env.VAPID_PUBLIC_KEY || '',
