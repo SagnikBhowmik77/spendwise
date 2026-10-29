@@ -109,3 +109,11 @@ Step 11 UI redesign DONE 2026-10-26 (before deploy, at your request): see client
 | **Audit** | Lighthouse (mobile) on the public pages: performance 91–94, accessibility, best practices and SEO 100. First download 410 KB → 202 KB (Hindi words and the Devanagari font now load only for Hindi). axe-core on 24 pages in light and dark: 60 contrast problems found and fixed (money green, faded paise, sidebar labels, unearned achievements, grey text in dark mode), 0 left. | numbers from the final runs |
 
 **For step 10 (deploy):** set `APP_URL` on Render to the Vercel address (email links point there), and on Vercel set `VITE_SITE_URL` to the same address (link previews need it) and, if you want a contact on the privacy page, `VITE_CONTACT_EMAIL`. The axe run used new, nearly empty accounts; pages full of data get one more look after deploy.
+
+## Step 10: deploy ✅ done 2026-10-29
+
+Live: web app **https://spendwise-tau-ruddy.vercel.app** (Vercel, project `spendwise`), API **https://spendwise-api-ur0f.onrender.com** (Render free, Singapore, from `render.yaml`), database MongoDB Atlas (access list now includes `0.0.0.0/0`). Code: **github.com/SagnikBhowmik77/spendwise** (private; pushing `main` redeploys both). Google OAuth redirect for Render added; the Telegram bot now runs by webhook on Render. Settings and gotchas are in [DEPLOY.md](DEPLOY.md).
+
+Checked live: API health (database, login and email configured); every page and the preview image load; preview tags carry the live address; the API accepts the site's requests; in a browser, a made-up login is refused by the API and "Forgot password" answers "Check your inbox". Not checked live: sign-up and the email links (a test sign-up would send a real email), Google Sheets and Telegram with your account.
+
+**To do:** confirm your email once on the live site (your account starts unconfirmed). Render's free tier sleeps after 15 minutes idle, so reminders only run while it is awake: a keep-awake ping needs either the repo made public (then a free GitHub Actions ping works) or a free cron-job.org account. 12N stays on hold.
