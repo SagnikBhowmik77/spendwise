@@ -36,3 +36,16 @@ scheduled jobs (reminders, reports) only run while it is awake. A Telegram messa
 awake for the 9 pm reminder, bill alerts and reports. It doesn't run all night because Render's 750 free hours a month are
 shared by every free service in the workspace (hopin, wardline, roomies too). GitHub stops scheduled workflows after 60
 days without a commit; re-enable it under the repo's Actions tab if pings stop.
+
+## Email goes through a relay on Vercel
+
+Render's free services block outgoing SMTP (ports 25, 465 and 587, since September 2025), so the live API can't reach
+Gmail itself. Instead it signs each email (HMAC-SHA256 with `MAIL_RELAY_SECRET`, valid for 5 minutes) and posts it over
+HTTPS to `client/api/send-mail.js`, a Vercel Function, which sends it through Gmail from its own address.
+
+- **Render** has `MAIL_RELAY_URL` = `https://spendwise-tau-ruddy.vercel.app/api/send-mail` and `MAIL_RELAY_SECRET`.
+- **Vercel** has only `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` and the same `MAIL_RELAY_SECRET`.
+- `MAIL_RELAY_SECRET` lives in `server/.env`. Changing it means updating both, then redeploying Vercel.
+- `GET /api/send-mail` answers `{"configured": true}` when the relay is set up; it never shows any value.
+- Locally, leave `MAIL_RELAY_URL` unset and the API uses SMTP directly. Checked live 29 October 2026: a confirmation
+  email reached the inbox.
