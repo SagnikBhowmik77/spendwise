@@ -992,6 +992,7 @@ export default {
   'Save details': 'जानकारी सेव करें',
   'Rent receipts for {fy}': '{fy} की किराये की रसीदें',
   'One receipt for each month you paid rent, made from your expenses in the Rent category (or tagged #rent), for your landlord to sign. Receipts are in English.': 'हर उस महीने की एक रसीद जिसमें आपने किराया भरा, किराया श्रेणी (या #rent टैग) वाले आपके खर्चों से बनी, मकान मालिक के हस्ताक्षर के लिए। रसीदें अंग्रेज़ी में होती हैं।',
+  '{n} month, {amount} in all': '{n} महीना, कुल {amount}',
   '{n} months, {amount} in all': '{n} महीने, कुल {amount}',
   'Rent this year is over ₹1,00,000, so the landlord’s PAN is needed for an HRA claim. Add it above.': 'इस साल किराया ₹1,00,000 से ज़्यादा है, इसलिए HRA दावे के लिए मकान मालिक का PAN ज़रूरी है। ऊपर जोड़ें।',
   'No rent paid in {fy} yet. Add rent as an expense in the Rent category.': '{fy} में अभी कोई किराया नहीं भरा। किराया श्रेणी में खर्च के रूप में किराया जोड़ें।',

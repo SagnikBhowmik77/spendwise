@@ -329,7 +329,7 @@ export function RentReceipts({ fy, open, onClose }) {
               <ul className="grid gap-1 text-sm sm:grid-cols-2">
                 {r.months.map((m) => <li key={m.month} className="flex justify-between gap-3 rounded bg-slate-50 px-2 py-1 dark:bg-slate-800/50"><span>{formatMonth(m.month)}</span><span className="tabular">{formatINR(m.amount.paise)}</span></li>)}
               </ul>
-              <p className="mt-2 text-sm font-medium">{t('{n} months, {amount} in all', { n: r.months.length, amount: formatINR(r.total.paise) })}</p>
+              <p className="mt-2 text-sm font-medium">{tn(r.months.length, '{n} month, {amount} in all', '{n} months, {amount} in all', { amount: formatINR(r.total.paise) })}</p>
               {r.panRequired && !r.profile?.landlordPan && <div className="mt-2"><Warning><p>{t('Rent this year is over ₹1,00,000, so the landlord’s PAN is needed for an HRA claim. Add it above.')}</p></Warning></div>}
             </>
           ) : <p className="text-sm text-slate-500 dark:text-slate-400">{t('No rent paid in {fy} yet. Add rent as an expense in the Rent category.', { fy })}</p>}
