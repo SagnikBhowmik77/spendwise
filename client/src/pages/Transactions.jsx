@@ -92,8 +92,9 @@ export default function Transactions() {
   const categoryOptions = useMemo(() => {
     if (!categories.data) return [];
     const { defaults, custom } = categories.data;
+    // Transfers have no categories, so that filter lists none.
     const types = filters.type ? [filters.type] : ['expense', 'income'];
-    return [...new Set(types.flatMap((ty) => [...defaults[ty], ...custom[ty]]))].sort((a, b) => catLabel(a).localeCompare(catLabel(b)));
+    return [...new Set(types.flatMap((ty) => [...(defaults[ty] ?? []), ...(custom[ty] ?? [])]))].sort((a, b) => catLabel(a).localeCompare(catLabel(b)));
   }, [categories.data, filters.type]);
 
   // Anything that narrows the list (for the empty-state message) vs anything changed from the default view.
