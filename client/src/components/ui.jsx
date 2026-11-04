@@ -212,7 +212,7 @@ export function Segmented({ options, value, onChange, label, size = 'md' }) {
 // Page sections: an underlined tab row. Same props as Segmented, so a page can swap one for the other.
 export function Tabs({ options, value, onChange, label, className }) {
   return (
-    <div role="tablist" aria-label={label} className={cx('flex max-w-full gap-1 overflow-x-auto border-b border-slate-900/[0.08] dark:border-white/[0.08]', className)}>
+    <div role="tablist" aria-label={label} className={cx('flex max-w-full gap-1 overflow-x-auto overflow-y-hidden border-b border-slate-900/[0.08] dark:border-white/[0.08]', className)}>
       {options.map((o) => {
         const on = value === o.value;
         return (

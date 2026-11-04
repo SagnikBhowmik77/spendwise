@@ -151,12 +151,31 @@ Bills need a category (the form says "Pick a category"), so don't skip it.
 
 | # | What to do | What it shows |
 |---|---|---|
-| 10.1 | **Add investment** → What is it? **Mutual fund** → Fund: type `Parag Parikh Flexi Cap` and pick the **Direct Growth** plan → **Save** | Real fund prices (NAV) from AMFI |
-| 10.2 | On the fund → **Buy** → Amount `10000` → save | Units bought at that day's price |
-| 10.3 | On the fund → **Monthly SIP** → Amount a month `2000`, First instalment: the 5th of this month | A SIP |
-| 10.4 | **Add investment** → **Fixed deposit** → Name `SBI FD`, Amount deposited `150000`, Interest rate `7.1`, Term `12` months → **Save** | Value today and at maturity |
-| 10.5 | *(optional)* **Add investment** → **PPF**, then **Gold** → fill in the form | PPF with its yearly limit; gold at your own price |
-| 10.6 | Point at Current value, Invested, Gain, **XIRR**, Where it is, Maturing soon; tab **Net worth** | Net worth month by month |
+**Use dates in the past.** Something bought today shows a gain of ₹0 and no XIRR, because XIRR appears only once the
+first money went in at least 30 days ago. Backdated entries give real gains, because every mutual fund price comes
+from AMFI's official NAV for that day. Also, never pick today's date for a fund: AMFI publishes today's NAV only in
+the evening.
+
+| # | What to do | What it shows |
+|---|---|---|
+| 10.1 | **Add investment** → What is it? **Mutual fund** → Fund: type `Parag Parikh Flexi Cap` and pick **Direct Plan - Growth** → **Save** | Real fund prices from AMFI |
+| 10.2 | On the fund → **Buy** → Date `05-05-2026`, Amount `10000`; leave Units and NAV empty → **Record purchase** | Units bought at 5 May's official NAV, with a real gain and XIRR today |
+| 10.3 | On the fund → **Start SIP** (or **Change SIP**) → Amount a month `5000`, First instalment `05-06-2026` → **Save SIP** | It buys every past instalment (June to October) at each day's NAV, then shows "5 instalments bought. Next on 5 Nov" |
+| 10.4 | **Add investment** → **Mutual fund** → `UTI Nifty 50 Index Fund` → **Direct Plan - Growth** → **Save** → **Buy**: Date `01-01-2026`, Amount `20000` | A second fund, bought at the start of the year |
+| 10.5 | **Add investment** → **Fixed deposit** → Name `SBI FD`, Amount `150000`, Interest rate `7.1`, Start date `20-11-2025`, Term `12` months → **Save** | Interest earned so far, the value at maturity, and it appears under **Maturing soon** (it matures on 20 Nov 2026) |
+| 10.6 | **Add investment** → **PPF** → Name `PPF - SBI`, Interest rate `7.1` → **Save** → **Deposit** `50000`, Date `10-04-2026` | Interest earned this year, and the bar for ₹50,000 of the ₹1,50,000 yearly limit |
+| 10.7 | *(optional)* **Add investment** → **Stock** → Name `Infosys` → **Buy**: Date `02-03-2026`, Units `10`, Price per unit: Infosys's closing price on that day (look it up on NSE or Google) → then **Update price** with today's price | Stocks use prices you enter, and the gain follows from them |
+| 10.8 | Point at Current value, Invested, Gain, **XIRR**, **Where it is** (Mutual funds, Fixed deposits, PPF), **Maturing soon**; then the **Net worth** tab | The whole portfolio, and net worth month by month |
+
+For 10.7, type real prices only, so the demo shows true figures. If you don't want to look one up, skip stocks.
+
+**If you already bought the fund with today's or yesterday's date:** click **History** on the fund card, delete that
+purchase with the bin icon, and buy again with the May date.
+
+**What to say:** *"Every mutual fund price comes from AMFI's official daily NAV, so I just enter the amount and date.
+The SIP started in June, so Spendwise bought each month's instalment at that day's real NAV. XIRR is the yearly return
+that takes into account when each rupee went in. The FD matures this month, so it's under Maturing soon, and I'll get
+a reminder a week before."*
 
 ---
 

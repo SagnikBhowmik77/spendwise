@@ -379,7 +379,7 @@ function HoldingCard({ h, act }) {
   const history = market ? h.trades : h.kind === 'ppf' ? h.deposits
     : h.kind === 'epf' ? [...h.deposits, ...h.passbook.map((p) => ({ ...p, passbook: true }))].sort((a, b) => (a.date < b.date ? 1 : -1)) : [];
   return (
-    <Card className="min-w-0">
+    <Card className="@container min-w-0">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -408,7 +408,8 @@ function HoldingCard({ h, act }) {
         </div>
         <p className="tabular shrink-0 text-right text-heading font-semibold">{formatINR(h.value.paise)}</p>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* Four across only when the card itself is wide enough, so amounts are never cut off. */}
+      <div className="mt-3 grid grid-cols-2 gap-3 @md:grid-cols-4">
         <Metric label={t('Invested')}>{formatINR(h.invested.paise)}</Metric>
         <Metric label={t('Gain')}><span className={gainTone(h.gain.paise)}>{signed(h.gain.paise)}</span></Metric>
         <Metric label={t('Gain %')}><span className={gainTone(h.gain.paise)}>{pct(h.gainPct)}</span></Metric>
@@ -538,7 +539,8 @@ function Holdings({ onAdd }) {
           {groups.map((g) => (
             <section key={g.kind} className="mb-6" aria-label={g.label}>
               <h2 className="mb-2 text-sm font-semibold text-slate-500 dark:text-slate-400">{g.label}</h2>
-              <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">{g.items.map((h) => <HoldingCard key={h.id} h={h} act={act} />)}</div>
+              {/* Two columns on very wide screens; a lone or odd last card takes the full row instead of leaving a gap. */}
+              <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2 2xl:[&>*:last-child:nth-child(odd)]:col-span-2">{g.items.map((h) => <HoldingCard key={h.id} h={h} act={act} />)}</div>
             </section>
           ))}
           {closed.length > 0 && <p className="text-sm text-slate-500 dark:text-slate-400">{t('Closed (not in the totals): {list}.', { list: closed.map((h) => h.name).join(', ') })}</p>}
