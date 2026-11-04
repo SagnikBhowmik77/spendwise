@@ -222,7 +222,7 @@ const VERDICT = {
 function Afford() {
   // From the wishlist: /plan?tab=afford&amount=15000 checks that price straight away.
   const [search] = useSearchParams();
-  const preset = /^d+(.d{1,2})?$/.test(search.get('amount') ?? '') ? search.get('amount') : '';
+  const preset = /^\d+(\.\d{1,2})?$/.test(search.get('amount') ?? '') ? search.get('amount') : '';
   const [amount, setAmount] = useState(preset);
   const [date, setDate] = useState(today());
   const [params, setParams] = useState(preset ? { amount: preset, date: today() } : null);

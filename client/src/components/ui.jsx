@@ -18,16 +18,19 @@ const VARIANTS = {
 };
 const SIZES = { sm: 'h-8 px-3 text-sm gap-1.5', md: 'h-10 px-4 text-sm gap-2', lg: 'h-11 px-5 text-body gap-2', icon: 'h-9 w-9' };
 
+// The button look on its own, for links that should read as buttons.
+export const buttonClass = ({ variant = 'primary', size = 'md', className } = {}) => cx(
+  'inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg font-medium',
+  'transition-[background-color,box-shadow,color,transform] duration-150 ease-out active:scale-[0.98]',
+  'disabled:pointer-events-none disabled:opacity-50 [&_svg]:shrink-0',
+  VARIANTS[variant], SIZES[size], className,
+);
+
 export function Button({ variant = 'primary', size = 'md', loading = false, className, children, disabled, ...props }) {
   return (
     <button
       type="button"
-      className={cx(
-        'inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-lg font-medium',
-        'transition-[background-color,box-shadow,color,transform] duration-150 ease-out active:scale-[0.98]',
-        'disabled:pointer-events-none disabled:opacity-50 [&_svg]:shrink-0',
-        VARIANTS[variant], SIZES[size], className,
-      )}
+      className={buttonClass({ variant, size, className })}
       disabled={disabled || loading}
       {...props}
     >

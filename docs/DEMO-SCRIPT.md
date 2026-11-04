@@ -114,7 +114,7 @@ Bills need a category (the form says "Pick a category"), so don't skip it.
 | 7.1 | **New goal** → Name `Emergency fund`, Target `300000`, Target date: a year from today → **Save** | Monthly amount needed to get there |
 | 7.2 | **Add money** → `10000` → **Add money**; then **Take out** `2000` | The progress ring moves |
 | 7.3 | Tab **Wishlist** → **Add to wishlist**: Item `Noise-cancelling headphones`, Price `15000`, Wait before buying `30` days → **Save** | A cooling-off period before buying |
-| 7.4 | On it → **Can I afford it?** | Opens the affordability check with the price filled in |
+| 7.4 | On the headphones card, under the price, click the **Can I afford it?** button (next to **Buy** and **Don't need it**) | Opens Plan → Can I afford it? with ₹15,000 filled in and the answer already shown |
 
 ---
 

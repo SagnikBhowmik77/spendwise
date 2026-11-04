@@ -2,7 +2,7 @@
 import { useId, useState } from 'react';
 import { Link } from 'react-router';
 import toast from 'react-hot-toast';
-import { Copy, Gift, Mail, Pencil, PiggyBank, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
+import { Copy, Gift, Mail, Pencil, PiggyBank, Plus, Scale, ShoppingBag, Trash2, X } from 'lucide-react';
 import { useCategories, useEnvelopes, usePlanMutation, useSinkingFunds, useWishlist } from '../hooks/api.js';
 import { currentMonth, shiftMonth, today } from '../lib/dates.js';
 import { formatDay, formatINR, formatMonth } from '../lib/format.js';
@@ -11,7 +11,7 @@ import { t, tn } from '../lib/i18n.js';
 import MonthPicker from './MonthPicker.jsx';
 import { ConfirmDialog, Modal } from './Modal.jsx';
 import { AccountSelect, amountProblem } from './TransactionForm.jsx';
-import { Badge, Button, Card, CardHeader, EmptyState, ErrorNote, Field, Input, ProgressBar, Skeleton, cx } from './ui.jsx';
+import { Badge, Button, Card, CardHeader, EmptyState, ErrorNote, Field, Input, ProgressBar, Skeleton, buttonClass, cx } from './ui.jsx';
 
 const rupees = (s) => String(s ?? '').trim().replace(/,/g, '');
 const errorText = (err) => err.details?.[0]?.message ?? err.message;
@@ -398,7 +398,7 @@ export function Wishlist() {
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   <Button size="sm" variant={w.ready ? 'primary' : 'secondary'} onClick={() => setBuying(w)}><ShoppingBag className="h-4 w-4" aria-hidden="true" /> {t('Buy')}</Button>
                   <Button size="sm" variant="secondary" onClick={() => drop(w)}>{t('Don’t need it')}</Button>
-                  <Link to={`/plan?tab=afford&amount=${w.price.rupees}`} className="inline-flex items-center px-2 text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400">{t('Can I afford it?')}</Link>
+                  <Link to={`/plan?tab=afford&amount=${w.price.rupees}`} className={buttonClass({ variant: 'secondary', size: 'sm' })}><Scale className="h-4 w-4" aria-hidden="true" /> {t('Can I afford it?')}</Link>
                   <Button size="sm" variant="ghost" className="ml-auto" onClick={() => setForm({ item: w })} aria-label={t('Edit {name}', { name: w.name })}><Pencil className="h-4 w-4" aria-hidden="true" /></Button>
                 </div>
               </Card>
