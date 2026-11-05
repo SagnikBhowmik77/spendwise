@@ -47,6 +47,18 @@ export function createApp() {
   const json = express.json({ limit: '100kb' });
   app.use((req, res, next) => (req.path.startsWith('/api/imports') || req.path.startsWith('/api/backup') ? next() : json(req, res, next)));
 
+  // The bare backend URL says what it is, instead of a 404, for anyone who opens it in a browser.
+  app.get('/', (_req, res) => {
+    res.json({
+      service: 'spendwise-api',
+      status: 'running',
+      message: 'Spendwise backend API. The app itself is at the "app" link; every API route is under /api.',
+      health: '/api/health',
+      app: config.appUrl,
+      source: 'https://github.com/SagnikBhowmik77/spendwise',
+    });
+  });
+
   // `ok` means the API can serve data: it is false while the database is missing or unreachable.
   app.get('/api/health', (_req, res) => {
     const database = dbStatus();

@@ -13,6 +13,15 @@ before(async () => {
 
 after(() => server.close());
 
+test('GET / says what the backend is and where to go, instead of a 404', async () => {
+  const res = await fetch(`${base}/`);
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.service, 'spendwise-api');
+  assert.equal(body.status, 'running');
+  assert.equal(body.health, '/api/health');
+});
+
 test('GET /api/health says plainly when no database is configured', async () => {
   const res = await fetch(`${base}/api/health`);
   assert.equal(res.status, 503);
