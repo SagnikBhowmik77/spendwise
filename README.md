@@ -277,7 +277,7 @@ bills that remind, investments that price themselves, tax answers based on curre
 shares one view of its money. It runs end to end on free services (Vercel, Render, MongoDB Atlas, Gmail) and is tested
 at every layer.
 
-**Known limits.** The free API server sleeps overnight, so the first request after that can take up to a minute.
+**Known limits.** The free API server is kept awake from 05:30 to about 00:20 India time and sleeps in between, so the first request at night can take up to a minute.
 Spendwise records money; it does not connect to bank accounts or move money, and its tax figures are estimates, not
 advice. Statements in PDF format aren't read (CSV and Excel are).
 
