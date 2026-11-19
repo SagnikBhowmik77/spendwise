@@ -5,7 +5,7 @@ UPI and card spending, salary credits, EMIs, fixed deposits, PPF, mutual funds a
 
 **Live:** https://spendwise-tau-ruddy.vercel.app · **API:** https://spendwise-api-ur0f.onrender.com/api/health ·
 **Full API reference:** [docs/API.md](docs/API.md) · **Deployment notes:** [DEPLOY.md](DEPLOY.md)
-
+**Planned and tracked in:** [Tessera](https://tessera-eight-gamma.vercel.app), my issue tracker
 ![Spendwise dashboard](docs/screenshots/readme/dashboard.png)
 
 ---
